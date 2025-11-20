@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/posts"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_POST")
+}
+
+model Comments {
+  id             String     @id
+  userId         String?
+  postId         String
+  parentId       String?
+  content        String
+  createdAt      DateTime   @default(now())
+  Comments       Comments?  @relation("CommentsToComments", fields: [parentId], references: [id])
+  other_Comments Comments[] @relation("CommentsToComments")
+  Posts          Posts      @relation(fields: [postId], references: [id])
+  Users          Users?     @relation(fields: [userId], references: [id])
+}
+
+model Hashtag {
+  id           String         @id
+  name         String         @unique @db.VarChar(100)
+  createdAt    DateTime       @default(now())
+  PostHashtags PostHashtags[]
+}
+
+model Likes {
+  id        String   @id
+  userId    String?
+  postId    String
+  createdAt DateTime @default(now())
+  Posts     Posts    @relation(fields: [postId], references: [id])
+  Users     Users?   @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+model Media {
+  id        String        @id
+  postId    String
+  mediaUrl  String
+  mediaType MediaTypeEnum
+  createdAt DateTime      @default(now())
+  Posts     Posts         @relation(fields: [postId], references: [id])
+}
+
+model NewsFeed {
+  id        String   @id
+  userId    String?
+  postId    String
+  reason    String?  @db.VarChar(50)
+  score     Float
+  isNew     Boolean?
+  createdAt DateTime @default(now())
+  Posts     Posts    @relation(fields: [postId], references: [id])
+  Users     Users?   @relation(fields: [userId], references: [id])
+}
+
+model PostHashtags {
+  postId    String
+  hashtagId String
+  Hashtag   Hashtag @relation(fields: [hashtagId], references: [id])
+  Posts     Posts   @relation(fields: [postId], references: [id])
+
+  @@id([postId, hashtagId])
+}
+
+model PostTagFriend {
+  id                                  String   @id
+  postId                              String
+  userId                              String
+  taggedBy                            String
+  createdAt                           DateTime @default(now())
+  Posts                               Posts    @relation(fields: [postId], references: [id])
+  Users_PostTagFriend_taggedByToUsers Users    @relation("PostTagFriend_taggedByToUsers", fields: [taggedBy], references: [id])
+  Users_PostTagFriend_userIdToUsers   Users    @relation("PostTagFriend_userIdToUsers", fields: [userId], references: [id])
+}
+
+model Posts {
+  id            String          @id
+  userId        String
+  title         String?
+  content       String?
+  visibility    VisibilityEnum  @default(public)
+  censor        CensorEnum      @default(pending)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @default(now())
+  shareCount    Int             @default(0)
+  postType      PostTypeEnum    @default(post)
+  commentCount  Int             @default(0)
+  likeCount     Int             @default(0)
+  expired_at    DateTime?
+  Comments      Comments[]
+  Likes         Likes[]
+  Media         Media[]
+  NewsFeed      NewsFeed[]
+  PostHashtags  PostHashtags[]
+  PostTagFriend PostTagFriend[]
+  Users         Users           @relation(fields: [userId], references: [id])
+  Shares        Shares[]
+  Viewer        Viewer[]
+}
+
+model Shares {
+  id        String   @id
+  userId    String?
+  postId    String
+  createdAt DateTime @default(now())
+  Posts     Posts    @relation(fields: [postId], references: [id])
+  Users     Users?   @relation(fields: [userId], references: [id])
+}
+
+model Users {
+  id                                          String          @id
+  username                                    String          @unique
+  fullname                                    String?
+  avatarUrl                                   String?         @default("https://i.pinimg.com/736x/c6/e5/65/c6e56503cfdd87da299f72dc416023d4.jpg")
+  Comments                                    Comments[]
+  Likes                                       Likes[]
+  NewsFeed                                    NewsFeed[]
+  PostTagFriend_PostTagFriend_taggedByToUsers PostTagFriend[] @relation("PostTagFriend_taggedByToUsers")
+  PostTagFriend_PostTagFriend_userIdToUsers   PostTagFriend[] @relation("PostTagFriend_userIdToUsers")
+  Posts                                       Posts[]
+  Shares                                      Shares[]
+  Viewer                                      Viewer[]
+}
+
+model Viewer {
+  id       Int      @id @default(autoincrement())
+  userId   String
+  postId   String
+  viewedAt DateTime @default(now())
+  Posts    Posts    @relation(fields: [postId], references: [id])
+  Users    Users    @relation(fields: [userId], references: [id])
+
+  @@unique([userId, postId])
+}
+
+enum CensorEnum {
+  approved
+  pending
+  rejected
+  under_review
+}
+
+enum MediaTypeEnum {
+  image
+  video
+  file
+}
+
+enum NotificationTypeEnum {
+  like
+  comment
+  share
+}
+
+enum PostTypeEnum {
+  post
+  reel
+  story
+}
+
+enum VisibilityEnum {
+  public
+  private
+  friends
+}

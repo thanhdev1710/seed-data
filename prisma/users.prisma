@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/users"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL_USERS")
+}
+
+model Follow {
+  id                                  Int      @id @default(autoincrement())
+  leader_id                           String
+  follower_id                         String
+  created_at                          DateTime @default(now())
+  Profile_Follow_follower_idToProfile Profile  @relation("Follow_follower_idToProfile", fields: [follower_id], references: [user_id])
+  Profile_Follow_leader_idToProfile   Profile  @relation("Follow_leader_idToProfile", fields: [leader_id], references: [user_id])
+
+  @@unique([leader_id, follower_id])
+}
+
+model Interest {
+  id              Int               @id @default(autoincrement())
+  name            String            @unique
+  created_at      DateTime          @default(now())
+  ProfileInterest ProfileInterest[]
+}
+
+model Profile {
+  user_id                            String            @id
+  username                           String            @unique @db.VarChar(50)
+  email                              String            @unique @db.VarChar(255)
+  bio                                String            @db.VarChar(500)
+  avatar_url                         String            @db.VarChar(255)
+  created_at                         DateTime          @default(now())
+  updated_at                         DateTime
+  address                            String?           @db.VarChar(255)
+  phone                              String?           @db.VarChar(15)
+  firstName                          String            @db.VarChar(50)
+  lastName                           String            @db.VarChar(50)
+  dob                                DateTime
+  course                             String            @db.VarChar(9)
+  major                              String            @db.VarChar(100)
+  mssv                               String            @unique @db.VarChar(10)
+  gender                             Gender
+  Follow_Follow_follower_idToProfile Follow[]          @relation("Follow_follower_idToProfile")
+  Follow_Follow_leader_idToProfile   Follow[]          @relation("Follow_leader_idToProfile")
+  ProfileInterest                    ProfileInterest[]
+
+  @@index([dob])
+}
+
+model ProfileInterest {
+  id          Int      @id @default(autoincrement())
+  profile_id  String
+  interest_id Int
+  created_at  DateTime @default(now())
+  Interest    Interest @relation(fields: [interest_id], references: [id])
+  Profile     Profile  @relation(fields: [profile_id], references: [user_id])
+
+  @@unique([profile_id, interest_id])
+}
+
+enum Gender {
+  Nam
+  N_   @map("Nữ")
+  Kh_c @map("Khác")
+}
